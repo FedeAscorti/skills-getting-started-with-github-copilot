@@ -46,5 +46,76 @@
     </footer>
 
     <script src="app.js"></script>
+    <script>
+      async function loadActivities() {
+        const res = await fetch("/activities");
+        const activities = await res.json();
+        const activitiesList = document.getElementById("activities-list");
+        activitiesList.innerHTML = "";
+
+        Object.entries(activities).forEach(([name, info]) => {
+          const card = document.createElement("div");
+          card.className = "activity-card";
+          card.innerHTML = `
+            <h4>${name}</h4>
+            <p><strong>Description:</strong> ${info.description}</p>
+            <p><strong>Schedule:</strong> ${info.schedule}</p>
+            <p><strong>Max Participants:</strong> ${info.max_participants}</p>
+            <div class="participants-section">
+              <strong>Participants:</strong>
+              <ul class="participants-list">
+                ${info.participants.length === 0
+                  ? '<li class="no-participants">No participants yet.</li>'
+                  : info.participants.map(email => `<li>${email}</li>`).join("")}
+              </ul>
+            </div>
+          `;
+          activitiesList.appendChild(card);
+        });
+
+        const activitySelect = document.getElementById("activity");
+        activitySelect.innerHTML =
+          '<option value="">-- Select an activity --</option>' +
+          Object.keys(activities)
+            .map(
+              name =>
+                `<option value="${name}">${name}</option>`
+            )
+            .join("");
+      }
+
+      loadActivities();
+
+      // Add signup form handler to reload activities after signup
+      document.getElementById("signup-form").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const email = document.getElementById("email").value;
+        const activity = document.getElementById("activity").value;
+        const messageDiv = document.getElementById("message");
+        messageDiv.className = "hidden";
+        messageDiv.textContent = "";
+
+        try {
+          const res = await fetch(`/activities/${encodeURIComponent(activity)}/signup?email=${encodeURIComponent(email)}`, {
+            method: "POST"
+          });
+          if (!res.ok) {
+            const data = await res.json();
+            messageDiv.className = "message error";
+            messageDiv.textContent = data.detail || "Error signing up.";
+          } else {
+            const data = await res.json();
+            messageDiv.className = "message success";
+            messageDiv.textContent = data.message;
+            document.getElementById("signup-form").reset();
+            await loadActivities(); // <-- reload activities to update participants
+          }
+        } catch (err) {
+          messageDiv.className = "message error";
+          messageDiv.textContent = "Network error.";
+        }
+        messageDiv.classList.remove("hidden");
+      });
+    </script>
   </body>
 </html>
