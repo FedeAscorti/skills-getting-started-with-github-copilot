@@ -51,7 +51,7 @@
         const res = await fetch("/activities");
         const activities = await res.json();
         const activitiesList = document.getElementById("activities-list");
-        activitiesList.innerHTML = "";
+        activitiesList.innerHTML = ""; // Remove loading message
 
         Object.entries(activities).forEach(([name, info]) => {
           const card = document.createElement("div");
@@ -64,9 +64,11 @@
             <div class="participants-section">
               <strong>Participants:</strong>
               <ul class="participants-list">
-                ${info.participants.length === 0
-                  ? '<li class="no-participants">No participants yet.</li>'
-                  : info.participants.map(email => `<li>${email}</li>`).join("")}
+                ${
+                  Array.isArray(info.participants) && info.participants.length > 0
+                    ? info.participants.map(email => `<li>${email}</li>`).join("")
+                    : '<li class="no-participants">No participants yet.</li>'
+                }
               </ul>
             </div>
           `;
@@ -84,7 +86,10 @@
             .join("");
       }
 
-      loadActivities();
+      // Run loadActivities only after DOM is ready
+      document.addEventListener("DOMContentLoaded", () => {
+        loadActivities();
+      });
 
       // Add signup form handler to reload activities after signup
       document.getElementById("signup-form").addEventListener("submit", async function (e) {
